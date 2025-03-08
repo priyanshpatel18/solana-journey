@@ -14,6 +14,10 @@ Vote: Users can cast their votes for a candidate in a poll.
 
 Prevent Duplicate Votes: Each user can only vote once per poll.
 
+Delete Candidates: Remove a candidate from a poll.
+
+Delete Polls: Remove an entire poll from the system.
+
 ## Prerequisites
 
 Before running the program, ensure you have the following:
@@ -93,6 +97,26 @@ await votingProgram.methods.vote(
 ).rpc();
 ```
 Casts a vote for a candidate in a poll.
+
+`deleteCandidate`
+
+```js
+await votingProgram.methods.deleteCandidate(
+  pollId,
+  candidateId
+).rpc();
+```
+Removes a candidate from a poll.
+
+`deletePoll`
+
+```js
+await votingProgram.methods.deletePoll(
+  pollId
+).rpc();
+```
+
+Removes an entire poll from the system.
 
 ## Deployment to Devnet
 

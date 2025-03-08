@@ -78,6 +78,17 @@ export default function PollComponent({
 
     toast.success("Poll deleted successfully.");
   }
+
+  const handleVote = (pollId: number, candidateId: number) => {
+    if (!publicKey) return toast.error("Please connect your wallet to vote.");
+
+    vote.mutate({ pollId, candidateId });
+
+    toast.success("Vote submitted successfully");
+
+    setIsAddingCandidate(false);
+  }
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -107,7 +118,7 @@ export default function PollComponent({
               key={candidate.candidateId}
               variant="default"
               className="truncate"
-              onClick={() => vote.mutate({ pollId, candidateId: candidate.candidateId })}
+              onClick={() => handleVote(pollId, candidate.candidateId)}
             >
               {candidate.name}
             </Button>
