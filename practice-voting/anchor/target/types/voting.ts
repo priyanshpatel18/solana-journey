@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/voting.json`.
  */
 export type Voting = {
-  "address": "FEyfrbvL7uAQmLbpo1YytZtPB2DJL9Zstu7KYNEq4w2n",
+  "address": "CCqSC4D4fJDj9KeKgibvyW2xd1FYuSEi8i7hjHovgDkK",
   "metadata": {
     "name": "voting",
     "version": "0.1.0",
@@ -76,6 +76,110 @@ export type Voting = {
         {
           "name": "name",
           "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "deleteCandidate",
+      "discriminator": [
+        96,
+        231,
+        51,
+        155,
+        5,
+        20,
+        214,
+        17
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "candidate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "pollId"
+              },
+              {
+                "kind": "arg",
+                "path": "candidateId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pollAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "pollId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "pollId",
+          "type": "u64"
+        },
+        {
+          "name": "candidateId",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "deletePoll",
+      "discriminator": [
+        156,
+        80,
+        237,
+        248,
+        65,
+        44,
+        143,
+        152
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pollAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "pollId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "pollId",
+          "type": "u64"
         }
       ]
     },

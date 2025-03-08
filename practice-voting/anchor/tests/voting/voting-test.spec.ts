@@ -4,7 +4,7 @@ import { BankrunProvider, startAnchor } from 'anchor-bankrun';
 import { Voting } from 'anchor/target/types/voting';
 const IDL = require("../../target/idl/voting.json");
 
-const votingAddress = new PublicKey("FEyfrbvL7uAQmLbpo1YytZtPB2DJL9Zstu7KYNEq4w2n");
+const votingAddress = new PublicKey("CCqSC4D4fJDj9KeKgibvyW2xd1FYuSEi8i7hjHovgDkK");
 
 describe('Voting Program', () => {
   let context;
@@ -23,7 +23,7 @@ describe('Voting Program', () => {
   it('initializePoll', async () => {
     const pollId = new anchor.BN(1);
     const pollStart = new anchor.BN(1741372200);
-    const days = 3;
+    const days = 7;
     const pollEnd = new anchor.BN(pollStart.toNumber() + (days * 86400));
 
     await votingProgram.methods.inititalizePoll(

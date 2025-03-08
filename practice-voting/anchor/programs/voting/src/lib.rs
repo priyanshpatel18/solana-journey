@@ -86,6 +86,33 @@ pub mod voting {
 
         Ok(())
     }
+
+    pub fn delete_candidate(
+        ctx: Context<DeleteCandidate>,
+        _poll_id: u64,
+        _candidate_id: u64,
+    ) -> Result<()> {
+        let poll_account = &mut ctx.accounts.poll_account;
+
+        // Ensure there is at least one candidate to delete
+        require!(
+            poll_account.candidate_count > 0,
+            PollError::InvalidCandidate
+        );
+
+        poll_account.candidate_count -= 1;
+
+        Ok(())
+    }
+
+    pub fn delete_poll(ctx: Context<ClosePoll>, poll_id: u64) -> Result<()> {
+        let poll_account = &ctx.accounts.poll_account;
+
+        // Ensure all candidates are deleted before deleting the poll
+        require!(poll_account.candidate_count == 0, PollError::InvalidPoll);
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -160,6 +187,31 @@ pub struct Vote<'info> {
         bump
     )]
     pub vote_record: Account<'info, VoteRecord>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(poll_id: u64, candidate_id: u64)]
+pub struct DeleteCandidate<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut,
+        close = signer,
+        seeds = [poll_id.to_le_bytes().as_ref(), candidate_id.to_le_bytes().as_ref()],
+        bump,
+        constraint = poll_account.authority == *signer.key @ PollError::Unauthorized
+    )]
+    pub candidate: Account<'info, Candidate>,
+
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub poll_account: Account<'info, Poll>,
 
     pub system_program: Program<'info, System>,
 }

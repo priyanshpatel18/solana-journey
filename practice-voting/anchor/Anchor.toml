@@ -5,10 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-voting = "FEyfrbvL7uAQmLbpo1YytZtPB2DJL9Zstu7KYNEq4w2n"
+voting = "CCqSC4D4fJDj9KeKgibvyW2xd1FYuSEi8i7hjHovgDkK"
 
 [programs.localnet]
-voting = "FEyfrbvL7uAQmLbpo1YytZtPB2DJL9Zstu7KYNEq4w2n"
+voting = "CCqSC4D4fJDj9KeKgibvyW2xd1FYuSEi8i7hjHovgDkK"
 
 [registry]
 url = "https://api.apr.dev"
