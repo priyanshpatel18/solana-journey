@@ -30,6 +30,8 @@ pub mod voting {
         poll_account.question = question;
         poll_account.poll_start = poll_start;
         poll_account.poll_end = poll_end;
+        poll_account.authority = *ctx.accounts.signer.key;
+
         poll_account.candidate_count = 0;
         poll_account.total_votes = 0;
         Ok(())
@@ -43,6 +45,9 @@ pub mod voting {
     ) -> Result<()> {
         let candidate = &mut ctx.accounts.candidate;
         let poll_account = &mut ctx.accounts.poll_account;
+
+        // Check for correct poll
+        require!(poll_account.poll_id == poll_id, PollError::InvalidPoll);
 
         candidate.candidate_id = candidate_id;
         candidate.name = name;
@@ -110,7 +115,8 @@ pub struct AddCandidate<'info> {
     #[account(
         mut,
         seeds = [poll_id.to_le_bytes().as_ref()],
-        bump
+        bump,
+        constraint = poll_account.authority == *signer.key @ PollError::Unauthorized
     )]
     pub poll_account: Account<'info, Poll>,
 
@@ -178,6 +184,7 @@ pub struct Poll {
     pub poll_end: u64,
     pub candidate_count: u64,
     pub total_votes: u64,
+    pub authority: Pubkey,
 }
 
 #[account]
@@ -188,14 +195,18 @@ pub struct VoteRecord {
 
 #[error_code]
 pub enum PollError {
-    #[msg("Poll end time must be after start time")]
+    #[msg("Poll start time must be before the end time.")]
     InvalidPollTime,
-    #[msg("Poll cannot end in the past")]
+    #[msg("Poll end time cannot be in the past.")]
     InvalidPollEnd,
-    #[msg("Voter has already voted")]
+    #[msg("You have already voted in this poll.")]
     AlreadyVoted,
-    #[msg("Voting is closed")]
+    #[msg("Voting for this poll is closed.")]
     VotingClosed,
-    #[msg("Candidate does not belong to this poll")]
+    #[msg("Selected candidate does not belong to this poll.")]
     InvalidCandidate,
+    #[msg("Invalid poll reference.")]
+    InvalidPoll,
+    #[msg("Only the poll creator can modify this poll")]
+    Unauthorized,
 }

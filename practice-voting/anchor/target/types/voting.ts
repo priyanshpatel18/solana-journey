@@ -257,27 +257,37 @@ export type Voting = {
     {
       "code": 6000,
       "name": "invalidPollTime",
-      "msg": "Poll end time must be after start time"
+      "msg": "Poll start time must be before the end time."
     },
     {
       "code": 6001,
       "name": "invalidPollEnd",
-      "msg": "Poll cannot end in the past"
+      "msg": "Poll end time cannot be in the past."
     },
     {
       "code": 6002,
       "name": "alreadyVoted",
-      "msg": "Voter has already voted"
+      "msg": "You have already voted in this poll."
     },
     {
       "code": 6003,
       "name": "votingClosed",
-      "msg": "Voting is closed"
+      "msg": "Voting for this poll is closed."
     },
     {
       "code": 6004,
       "name": "invalidCandidate",
-      "msg": "Candidate does not belong to this poll"
+      "msg": "Selected candidate does not belong to this poll."
+    },
+    {
+      "code": 6005,
+      "name": "invalidPoll",
+      "msg": "Invalid poll reference."
+    },
+    {
+      "code": 6006,
+      "name": "unauthorized",
+      "msg": "Only the poll creator can modify this poll"
     }
   ],
   "types": [
@@ -333,6 +343,10 @@ export type Voting = {
           {
             "name": "totalVotes",
             "type": "u64"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
           }
         ]
       }

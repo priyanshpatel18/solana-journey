@@ -22,8 +22,8 @@ describe('Voting Program', () => {
 
   it('initializePoll', async () => {
     const pollId = new anchor.BN(1);
-    const pollStart = new anchor.BN(1741285800);
-    const days = 1;
+    const pollStart = new anchor.BN(1741372200);
+    const days = 3;
     const pollEnd = new anchor.BN(pollStart.toNumber() + (days * 86400));
 
     await votingProgram.methods.inititalizePoll(
@@ -52,7 +52,6 @@ describe('Voting Program', () => {
     const pollId = new anchor.BN(1);
     const candidateId = new anchor.BN(1);
     const candidateName = "Solana";
-
 
     await votingProgram.methods.addCandidate(pollId, candidateId, candidateName).rpc();
 
