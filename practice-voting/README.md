@@ -60,7 +60,7 @@ anchor build
 ### Test the Program:
 
 ```bash
-anchor test --skip-test-validator
+anchor test --skip-local-validator --skip-deploy
 ```
 
 ## Key Functions
