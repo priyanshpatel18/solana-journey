@@ -289,7 +289,7 @@ export default function Page() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-4"
+            className="space-y-4 "
           >
             {userPolls && userPolls.length > 0 ? (
               userPolls.map((userPoll) => (
