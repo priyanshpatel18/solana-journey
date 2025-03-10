@@ -68,7 +68,7 @@
           "type": "u64"
         },
         {
-          "name": "name",
+          "name": "candidate_name",
           "type": "string"
         }
       ]
@@ -92,7 +92,19 @@
           "signer": true
         },
         {
-          "name": "candidate",
+          "name": "poll_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "poll_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "candidate_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -103,18 +115,6 @@
               {
                 "kind": "arg",
                 "path": "candidate_id"
-              }
-            ]
-          }
-        },
-        {
-          "name": "poll_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "arg",
-                "path": "poll_id"
               }
             ]
           }
@@ -178,16 +178,16 @@
       ]
     },
     {
-      "name": "inititalize_poll",
+      "name": "initialize_poll",
       "discriminator": [
-        25,
-        71,
         193,
-        57,
-        164,
-        178,
-        45,
-        144
+        22,
+        99,
+        197,
+        18,
+        33,
+        115,
+        117
       ],
       "accounts": [
         {
@@ -283,6 +283,15 @@
           "pda": {
             "seeds": [
               {
+                "kind": "const",
+                "value": [
+                  118,
+                  111,
+                  116,
+                  101
+                ]
+              },
+              {
                 "kind": "arg",
                 "path": "poll_id"
               },
@@ -300,11 +309,11 @@
       ],
       "args": [
         {
-          "name": "_poll_id",
+          "name": "poll_id",
           "type": "u64"
         },
         {
-          "name": "_candidate_id",
+          "name": "candidate_id",
           "type": "u64"
         }
       ]
@@ -386,6 +395,11 @@
       "code": 6006,
       "name": "Unauthorized",
       "msg": "Only the poll creator can modify this poll"
+    },
+    {
+      "code": 6007,
+      "name": "CandidatesExist",
+      "msg": "Candidates still exist for this poll. Remove them before deleting the poll."
     }
   ],
   "types": [
@@ -405,10 +419,6 @@
           {
             "name": "name",
             "type": "string"
-          },
-          {
-            "name": "votes",
-            "type": "u64"
           }
         ]
       }
@@ -435,16 +445,12 @@
             "type": "u64"
           },
           {
-            "name": "candidate_count",
-            "type": "u64"
-          },
-          {
-            "name": "total_votes",
-            "type": "u64"
-          },
-          {
             "name": "authority",
             "type": "pubkey"
+          },
+          {
+            "name": "total_candidates",
+            "type": "u64"
           }
         ]
       }
@@ -457,6 +463,14 @@
           {
             "name": "has_voted",
             "type": "bool"
+          },
+          {
+            "name": "candidate_id",
+            "type": "u64"
+          },
+          {
+            "name": "poll_id",
+            "type": "u64"
           }
         ]
       }

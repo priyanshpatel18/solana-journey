@@ -15,11 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useVoting from "@/hooks/useVoting";
+import { useStore } from "@/store";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { CalendarIcon, ImageOff, PlusCircle } from "lucide-react";
-import { useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export default function Page() {
@@ -35,6 +36,7 @@ export default function Page() {
   const [pollStart, setPollStart] = useState(0);
   const [activeTab, setActiveTab] = useState("browse");
   const [isCreating, setIsCreating] = useState(false);
+  const { isLoading, setLoading } = useStore();
 
   // Get today's date and 7 days from now for default values
   const today = new Date();
@@ -47,7 +49,7 @@ export default function Page() {
 
     // Ensure end date is at least one day after start date
     if (selectedDate >= pollEnd) {
-      setPollEnd(selectedDate + 86400000); // Add 1 day in milliseconds
+      setPollEnd(selectedDate + 86400000);
     }
   };
 
@@ -64,7 +66,8 @@ export default function Page() {
   const formatForInput = (date: Date) => format(date, "yyyy-MM-dd");
 
   // Handler for creating a new poll
-  const handleCreatePoll = () => {
+  const handleCreatePoll = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!publicKey) return toast.error("Please connect your wallet to create a poll.");
 
     if (!question.trim()) return toast.error("Poll question cannot be empty.");
@@ -72,10 +75,14 @@ export default function Page() {
     const startTime = new Date(pollStart || today).getTime() / 1000;
     const endTime = new Date(pollEnd || nextWeek).getTime() / 1000;
 
+    if (startTime === 0 || endTime === 0) {
+      return toast.error("Please select a start and end date for the poll.");
+    }
     if (startTime >= endTime) {
-      alert("Poll start time must be before the end time.");
       return toast.error("Poll start time must be before the end time.");
     }
+
+    setLoading(true);
 
     initializePoll.mutate({ question, pollStart: startTime, pollEnd: endTime });
 
@@ -111,7 +118,7 @@ export default function Page() {
   };
 
   return (
-    <div className="container max-w-4xl mx-auto py-6 space-y-8">
+    <div className="container max-w-4xl mx-auto p-6 space-y-8">
       <div className="flex items-center justify-between">
         <motion.h1
           className="text-3xl font-bold tracking-tight"
@@ -144,6 +151,7 @@ export default function Page() {
           onClick={() => setIsCreating(true)}
           className="gap-2"
           variant="outline"
+          disabled={isLoading}
         >
           <PlusCircle className="h-4 w-4" />
           Create Poll
@@ -163,53 +171,63 @@ export default function Page() {
               <CardDescription>Enter the details for your new voting poll</CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="question">Poll Question</Label>
-                <Input
-                  id="question"
-                  placeholder="What would you like to ask?"
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent>
+              <form onSubmit={handleCreatePoll} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="start-date">Start Date</Label>
-                  <div className="flex items-center">
-                    <Input
-                      id="start-date"
-                      type="date"
-                      defaultValue={formatForInput(today)}
-                      onChange={handleStartDateChange}
-                      min={formatForInput(today)}
-                    />
-
-
-                    <CalendarIcon className="ml-2 h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="question">Poll Question</Label>
+                  <Input
+                    id="question"
+                    placeholder="What would you like to ask?"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start-date">Start Date</Label>
+                    <div className="flex items-center">
+                      <Input
+                        id="start-date"
+                        type="date"
+                        defaultValue={formatForInput(today)}
+                        onChange={handleStartDateChange}
+                        min={formatForInput(today)}
+                        className="cursor-pointer w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end-date">End Date</Label>
+                    <div className="flex items-center">
+                      <Input
+                        id="end-date"
+                        type="date"
+                        defaultValue={formatForInput(nextWeek)}
+                        onChange={handleEndDateChange}
+                        min={formatForInput(today)}
+                        className="cursor-pointer w-full"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="end-date">End Date</Label>
-                  <div className="flex items-center">
-                    <Input
-                      id="end-date"
-                      type="date"
-                      defaultValue={formatForInput(nextWeek)}
-                      onChange={handleEndDateChange}
-                      min={formatForInput(today)}
-                    />
-                    <CalendarIcon className="ml-2 h-4 w-4 text-muted-foreground" />
+                <div className="flex justify-end gap-2">
+                  <div
+                    className="inline-flex items-center cursor-pointer justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+                    onClick={() => setIsCreating(false)}
+                  >
+                    Cancel
                   </div>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                  >
+                    Create Poll
+                  </Button>
                 </div>
-              </div>
+              </form>
             </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreating(false)}>Cancel</Button>
-              <Button type="submit" onClick={handleCreatePoll}>Create Poll</Button>
-            </CardFooter>
           </Card>
-        </motion.div>
+        </motion.div >
       )
       }
 
@@ -221,26 +239,31 @@ export default function Page() {
 
         <TabsContent value="browse" className="mt-4">
           {polls && polls.length > 0 ? (
-            polls.map((poll) => (
-              <motion.div
-                className="grid gap-4 md:grid-cols-2"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                key={poll.pollId.toString()}
-              >
-                <motion.div variants={itemVariants}>
-                  <PollComponent
-                    pollId={poll.pollId}
-                    pollQuestion={poll.pollQuestion}
-                    pollStart={poll.pollStart}
-                    pollEnd={poll.pollEnd}
-                    pollVotes={poll.pollVotes}
-                    pollCandidates={poll.pollCandidates}
-                  />
-                </motion.div>
-              </motion.div>
-            ))
+            <motion.div
+              className="grid gap-4 md:grid-cols-2"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {polls.map((poll) => {
+                if (poll.pollCandidates.length < 2) return null;
+
+                return (
+                  <motion.div variants={itemVariants} key={poll.pollId.toString()}>
+                    <PollComponent
+                      pollId={poll.pollId}
+                      pollQuestion={poll.pollQuestion}
+                      pollStart={poll.pollStart}
+                      pollEnd={poll.pollEnd}
+                      pollCandidates={poll.pollCandidates}
+                      isUserPoll={false}
+                      polls={polls}
+                      pollVotes={poll.pollVotes}
+                    />
+                  </motion.div>
+                )
+              })}
+            </motion.div>
           ) : (
             <motion.div
               className="flex flex-col items-center justify-center w-full p-12"
@@ -276,10 +299,10 @@ export default function Page() {
                     pollQuestion={userPoll.pollQuestion}
                     pollStart={userPoll.pollStart}
                     pollEnd={userPoll.pollEnd}
-                    pollVotes={userPoll.pollVotes}
                     isUserPoll={true}
                     pollCandidates={userPoll.pollCandidates}
                     polls={userPolls}
+                    pollVotes={userPoll.pollVotes}
                   />
                 </motion.div>
               ))
@@ -288,7 +311,11 @@ export default function Page() {
                 className="text-center p-12 border rounded-lg"
               >
                 <p className="text-muted-foreground mb-2">You haven't created any polls yet</p>
-                <Button onClick={() => setIsCreating(true)} className="gap-2">
+                <Button
+                  onClick={() => setIsCreating(true)}
+                  className="gap-2"
+                  disabled={isLoading}
+                >
                   <PlusCircle className="h-4 w-4" />
                   Create Your First Poll
                 </Button>

@@ -1,5 +1,6 @@
 import { useAnchorProvider } from "@/components/Providers";
 import { useTransactionToast } from "@/components/useTransactionToast";
+import { useStore } from "@/store";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -13,20 +14,22 @@ export interface Poll {
   pollQuestion: string;
   pollStart: number;
   pollEnd: number;
-  pollVotes: number;
   pollCandidates: { candidateId: number; name: string }[];
+  pollVotes: number;
   authority: PublicKey;
 }
 
 export interface Candidate {
   candidateId: number;
   name: string;
+  votes?: number;
 }
 
 export default function useVoting() {
   const provider = useAnchorProvider();
   const votingProgramId = useMemo(() => getVotingProgramID(), [])
   const votingProgram = useMemo(() => getVotingProgram(provider), [provider])
+  const { setLoading } = useStore();
   const { publicKey } = useWallet();
 
   const totalPollAccounts = useQuery({
@@ -36,13 +39,15 @@ export default function useVoting() {
 
       const candidates = await votingProgram.account.candidate.all();
 
+      const votes = await votingProgram.account.voteRecord.all();
+
       const polls: Poll[] = await Promise.all(pollAccounts.map(async (poll) => {
         const pollId = poll.account.pollId.toNumber();
         const pollQuestion = poll.account.question.toString();
         const pollStart = poll.account.pollStart.toNumber();
         const pollEnd = poll.account.pollEnd.toNumber();
-        const pollVotes = poll.account.totalVotes.toNumber();
         const pollCandidates = candidates.filter((candidate) => candidate.account.pollId.toNumber() === pollId);
+        const pollVotes = votes.filter((vote) => vote.account.pollId.toNumber() === pollId).length;
         const authority = poll.account.authority;
 
         return {
@@ -50,11 +55,12 @@ export default function useVoting() {
           pollQuestion,
           pollStart,
           pollEnd,
-          pollVotes,
           pollCandidates: pollCandidates.map((candidate) => ({
             candidateId: candidate.account.candidateId.toNumber(),
-            name: candidate.account.name.toString()
+            name: candidate.account.name.toString(),
+            votes: votes.filter((vote) => vote.account.candidateId.toNumber() === candidate.account.candidateId.toNumber() && vote.account.pollId.toNumber() === pollId).length
           })),
+          pollVotes,
           authority
         }
       }));
@@ -74,7 +80,7 @@ export default function useVoting() {
       const totalPolls = await votingProgram.account.poll.all();
       const pollId = totalPolls.length + 1;
 
-      const poll = await votingProgram.methods.inititalizePoll(
+      const poll = await votingProgram.methods.initializePoll(
         new BN(pollId),
         question,
         new BN(pollStart),
@@ -86,13 +92,15 @@ export default function useVoting() {
     onSuccess: (signature: string) => {
       totalPollAccounts.refetch();
       useTransactionToast()(signature);
+      setLoading(false);
     },
     onError: (error) => {
       if (error instanceof Error) {
         toast.error(error.message);
       }
       console.error(error);
-    }
+      setLoading(false);
+    },
   })
 
   const addCandidates = useMutation({
@@ -111,12 +119,14 @@ export default function useVoting() {
     onSuccess: (signature: string) => {
       totalPollAccounts.refetch();
       useTransactionToast()(signature);
+      setLoading(false);
     },
     onError: (error) => {
       if (error instanceof Error) {
         toast.error(error.message);
       }
       console.error(error);
+      setLoading(false);
     }
   })
 
@@ -135,41 +145,14 @@ export default function useVoting() {
     onSuccess: (signature: string) => {
       totalPollAccounts.refetch();
       useTransactionToast()(signature);
+      setLoading(false);
     },
     onError: (error) => {
       if (error instanceof Error) {
         toast.error(error.message);
       }
       console.error(error);
-    }
-  })
-
-  const deletePoll = useMutation({
-    mutationKey: ["delete-poll", { votingProgramId }],
-    mutationFn: async ({ pollId, candidates }: { pollId: number, candidates: Candidate[] }) => {
-      if (!votingProgram) throw new Error("Voting program not initialized");
-
-      for (const candidate of candidates) {
-        await votingProgram.methods
-          .deleteCandidate(new BN(pollId), new BN(candidate.candidateId))
-          .rpc();
-      }
-
-      const deletePoll = await votingProgram.methods.deletePoll(
-        new BN(pollId),
-      ).rpc();
-
-      return deletePoll;
-    },
-    onSuccess: (signature: string) => {
-      totalPollAccounts.refetch();
-      useTransactionToast()(signature);
-    },
-    onError: (error) => {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      }
-      console.error(error);
+      setLoading(false);
     }
   })
 
@@ -178,6 +161,6 @@ export default function useVoting() {
     initializePoll,
     addCandidates,
     vote,
-    deletePoll
+    votingProgram
   }
 }

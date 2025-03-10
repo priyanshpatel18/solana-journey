@@ -12,22 +12,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import useVoting, { Poll } from "@/hooks/useVoting";
-import { useWallet } from "@solana/wallet-adapter-react";
+import useVoting, { Candidate, Poll } from "@/hooks/useVoting";
+import { useStore } from "@/store";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Transaction } from "@solana/web3.js";
+import { BN } from "bn.js";
 import { CalendarIcon, Clock, PlusCircle, VoteIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTransactionToast } from "./useTransactionToast";
 
 interface PollProps {
   pollId: number;
   pollQuestion: string;
   pollStart: number;
   pollEnd: number;
-  pollVotes: number;
-  pollCandidates: { candidateId: number; name: string }[];
+  pollCandidates: Candidate[];
   onEdit?: () => void;
   isUserPoll?: boolean;
-  polls?: Poll[];
+  polls: Poll[];
+  pollVotes: number;
 }
 
 export default function PollComponent({
@@ -35,20 +39,23 @@ export default function PollComponent({
   pollQuestion,
   pollStart,
   pollEnd,
-  pollVotes,
   pollCandidates,
   isUserPoll,
-  polls
+  polls,
+  pollVotes,
 }: PollProps) {
   const [isAddingCandidate, setIsAddingCandidate] = useState(false);
   const [candidateName, setCandidateName] = useState("");
-  const { addCandidates, vote, deletePoll } = useVoting();
-  const { publicKey } = useWallet();
+  const { addCandidates, vote, votingProgram, totalPollAccounts } = useVoting();
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+  const { isLoading, setLoading } = useStore();
 
   const handleAddCandidate = (pollId: number, candidateName: string) => {
     if (!publicKey) return toast.error("Please connect your wallet to create a poll.");
 
     if (!candidateName.trim()) return toast.error("Candidate name cannot be empty.");
+    setLoading(true);
 
     const candidateCount = polls?.find((poll) => poll.pollId === pollId)?.pollCandidates.length || 0;
 
@@ -61,30 +68,52 @@ export default function PollComponent({
   }
 
   const handleDeletePoll = async (pollId: number) => {
-    if (!publicKey) return toast.error("Please connect your wallet to create a poll.");
+    if (!publicKey) return toast.error("Please connect your wallet to delete a poll.");
 
     const poll = polls?.find((poll) => poll.pollId === pollId);
-
     if (!poll) return;
 
-    const pollCandidates = poll.pollCandidates.map((candidate) => {
-      return {
-        candidateId: candidate.candidateId,
-        name: candidate.name
+    try {
+      setLoading(true);
+      const txn = new Transaction();
+
+      for (const candidate of poll.pollCandidates) {
+        const deleteCandidateIx = await votingProgram.methods
+          .deleteCandidate(new BN(pollId), new BN(candidate.candidateId))
+          .instruction();
+        txn.add(deleteCandidateIx);
       }
-    });
 
-    await deletePoll.mutateAsync({ pollId, candidates: pollCandidates });
+      const deletePollIx = await votingProgram.methods
+        .deletePoll(new BN(pollId))
+        .instruction();
+      txn.add(deletePollIx);
 
-    toast.success("Poll deleted successfully.");
-  }
+      const signature = await sendTransaction(txn, connection);
+      const result = await connection.confirmTransaction(signature, "confirmed");
+
+      if (result.value) {
+        useTransactionToast("Poll deleted successfully!")(signature);
+        totalPollAccounts.refetch();
+      }
+    } catch (error) {
+      console.error("Error deleting poll:", error);
+
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleVote = (pollId: number, candidateId: number) => {
     if (!publicKey) return toast.error("Please connect your wallet to vote.");
+    if (isUserPoll || polls.find((poll) => poll.pollId === pollId)?.authority.toBase58() === publicKey.toBase58()) return toast.error("You cannot vote on your own poll.");
 
+    setLoading(true);
     vote.mutate({ pollId, candidateId });
-
-    toast.success("Vote submitted successfully");
 
     setIsAddingCandidate(false);
   }
@@ -96,33 +125,37 @@ export default function PollComponent({
         <CardDescription className="flex items-center gap-2">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            Started: {new Date(pollStart * 1000).toLocaleString().split(",")[0]}
+            {new Date(pollStart * 1000).toLocaleString().split(",")[0]}
           </span>
           <Separator orientation="vertical" className="h-4" />
           <span className="flex items-center gap-1">
             <CalendarIcon className="h-3 w-3" />
-            Ends: {new Date(pollEnd * 1000).toLocaleString().split(",")[0]}
+            {new Date(pollEnd * 1000).toLocaleString().split(",")[0]}
           </span>
           <Separator orientation="vertical" className="h-4" />
           <span className="flex items-center gap-1">
             <VoteIcon className="h-3 w-3" />
-            Votes: {pollVotes.toString()}
+            Votes: {pollVotes}
           </span>
         </CardDescription>
       </CardHeader>
 
       <CardContent className="px-6 pb-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {pollCandidates.map((candidate) => (
+          {pollCandidates.map((candidate) =>
             <Button
               key={candidate.candidateId}
               variant="default"
-              className="truncate"
-              onClick={() => handleVote(pollId, candidate.candidateId)}
+              className={`truncate ${isUserPoll && "cursor-default hover:bg-primary"}`}
+              onClick={() => {
+                if (isUserPoll) return;
+                handleVote(pollId, candidate.candidateId)
+              }}
+              disabled={isLoading}
             >
-              {candidate.name}
+              {candidate.name}{" "}{isUserPoll && `(${candidate.votes})`}
             </Button>
-          ))}
+          )}
         </div>
       </CardContent>
 
@@ -140,16 +173,22 @@ export default function PollComponent({
               value={candidateName}
               onChange={(e) => setCandidateName(e.target.value)}
             />
-            <Button type="submit">Add</Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+            >
+              Add
+            </Button>
           </div>
         </form>
       )}
 
       {isUserPoll && (
-        <CardFooter className="flex justify-end gap-2">
+        <CardFooter className="flex justify-center lg:justify-end gap-2">
           <Button
             variant="outline"
             onClick={() => setIsAddingCandidate(!isAddingCandidate)}
+            disabled={isLoading}
           >
             {isAddingCandidate ? (
               "Cancel"
@@ -160,10 +199,18 @@ export default function PollComponent({
               </>
             )}
           </Button>
-          {/* <Button variant="outline" onClick={onEdit}>
+          {/* <Button
+            variant="outline"
+            onClick={onEdit}
+            disabled={isLoading}
+          >
             Edit Poll
           </Button> */}
-          <Button variant="destructive" onClick={() => handleDeletePoll(pollId)}>
+          <Button
+            disabled={isLoading}
+            variant="destructive"
+            onClick={() => handleDeletePoll(pollId)}
+          >
             Delete Poll
           </Button>
         </CardFooter>

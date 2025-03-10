@@ -74,7 +74,7 @@ export type Voting = {
           "type": "u64"
         },
         {
-          "name": "name",
+          "name": "candidateName",
           "type": "string"
         }
       ]
@@ -98,7 +98,19 @@ export type Voting = {
           "signer": true
         },
         {
-          "name": "candidate",
+          "name": "pollAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "arg",
+                "path": "pollId"
+              }
+            ]
+          }
+        },
+        {
+          "name": "candidateAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -109,18 +121,6 @@ export type Voting = {
               {
                 "kind": "arg",
                 "path": "candidateId"
-              }
-            ]
-          }
-        },
-        {
-          "name": "pollAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "arg",
-                "path": "pollId"
               }
             ]
           }
@@ -184,16 +184,16 @@ export type Voting = {
       ]
     },
     {
-      "name": "inititalizePoll",
+      "name": "initializePoll",
       "discriminator": [
-        25,
-        71,
         193,
-        57,
-        164,
-        178,
-        45,
-        144
+        22,
+        99,
+        197,
+        18,
+        33,
+        115,
+        117
       ],
       "accounts": [
         {
@@ -288,6 +288,15 @@ export type Voting = {
           "writable": true,
           "pda": {
             "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  111,
+                  116,
+                  101
+                ]
+              },
               {
                 "kind": "arg",
                 "path": "pollId"
@@ -392,6 +401,11 @@ export type Voting = {
       "code": 6006,
       "name": "unauthorized",
       "msg": "Only the poll creator can modify this poll"
+    },
+    {
+      "code": 6007,
+      "name": "candidatesExist",
+      "msg": "Candidates still exist for this poll. Remove them before deleting the poll."
     }
   ],
   "types": [
@@ -411,10 +425,6 @@ export type Voting = {
           {
             "name": "name",
             "type": "string"
-          },
-          {
-            "name": "votes",
-            "type": "u64"
           }
         ]
       }
@@ -441,16 +451,12 @@ export type Voting = {
             "type": "u64"
           },
           {
-            "name": "candidateCount",
-            "type": "u64"
-          },
-          {
-            "name": "totalVotes",
-            "type": "u64"
-          },
-          {
             "name": "authority",
             "type": "pubkey"
+          },
+          {
+            "name": "totalCandidates",
+            "type": "u64"
           }
         ]
       }
@@ -463,6 +469,14 @@ export type Voting = {
           {
             "name": "hasVoted",
             "type": "bool"
+          },
+          {
+            "name": "candidateId",
+            "type": "u64"
+          },
+          {
+            "name": "pollId",
+            "type": "u64"
           }
         ]
       }

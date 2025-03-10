@@ -4,13 +4,13 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock::Clock;
 
-declare_id!("FEyfrbvL7uAQmLbpo1YytZtPB2DJL9Zstu7KYNEq4w2n");
+declare_id!("CCqSC4D4fJDj9KeKgibvyW2xd1FYuSEi8i7hjHovgDkK");
 
 #[program]
 pub mod voting {
     use super::*;
 
-    pub fn inititalize_poll(
+    pub fn initialize_poll(
         ctx: Context<InitializePoll>,
         poll_id: u64,
         question: String,
@@ -31,9 +31,8 @@ pub mod voting {
         poll_account.poll_start = poll_start;
         poll_account.poll_end = poll_end;
         poll_account.authority = *ctx.accounts.signer.key;
+        poll_account.total_candidates = 0;
 
-        poll_account.candidate_count = 0;
-        poll_account.total_votes = 0;
         Ok(())
     }
 
@@ -41,34 +40,23 @@ pub mod voting {
         ctx: Context<AddCandidate>,
         poll_id: u64,
         candidate_id: u64,
-        name: String,
+        candidate_name: String,
     ) -> Result<()> {
         let candidate = &mut ctx.accounts.candidate;
         let poll_account = &mut ctx.accounts.poll_account;
 
-        // Check for correct poll
-        require!(poll_account.poll_id == poll_id, PollError::InvalidPoll);
-
         candidate.candidate_id = candidate_id;
-        candidate.name = name;
-        candidate.votes = 0;
+        candidate.name = candidate_name;
         candidate.poll_id = poll_id;
 
-        poll_account.candidate_count += 1;
+        poll_account.total_candidates += 1;
 
         Ok(())
     }
 
-    pub fn vote(ctx: Context<Vote>, _poll_id: u64, _candidate_id: u64) -> Result<()> {
+    pub fn vote(ctx: Context<Vote>, poll_id: u64, candidate_id: u64) -> Result<()> {
         let poll_account = &mut ctx.accounts.poll;
-        let candidate_account = &mut ctx.accounts.candidate;
         let vote_record = &mut ctx.accounts.vote_record;
-
-        // Check for correct candidate
-        require!(
-            candidate_account.poll_id == poll_account.poll_id,
-            PollError::InvalidCandidate
-        );
 
         // Check for poll time
         let current_time = Clock::get()?.unix_timestamp as u64;
@@ -80,9 +68,25 @@ pub mod voting {
         // Check for unique votes
         require!(!vote_record.has_voted, PollError::AlreadyVoted);
 
-        poll_account.total_votes += 1;
-        candidate_account.votes += 1;
         vote_record.has_voted = true;
+        vote_record.candidate_id = candidate_id;
+        vote_record.poll_id = poll_id;
+
+        Ok(())
+    }
+
+    pub fn delete_poll(ctx: Context<DeletePoll>, _poll_id: u64) -> Result<()> {
+        let poll_account = &mut ctx.accounts.poll_account;
+
+        // Check for authority
+        require!(
+            *ctx.accounts.signer.key == poll_account.authority,
+            PollError::Unauthorized
+        );
+
+        if poll_account.total_candidates > 0 {
+            return Err(PollError::CandidatesExist.into());
+        }
 
         Ok(())
     }
@@ -94,25 +98,57 @@ pub mod voting {
     ) -> Result<()> {
         let poll_account = &mut ctx.accounts.poll_account;
 
-        // Ensure there is at least one candidate to delete
+        // Check for authority
         require!(
-            poll_account.candidate_count > 0,
-            PollError::InvalidCandidate
+            *ctx.accounts.signer.key == poll_account.authority,
+            PollError::Unauthorized
         );
 
-        poll_account.candidate_count -= 1;
-
+        poll_account.total_candidates -= 1;
         Ok(())
     }
+}
 
-    pub fn delete_poll(ctx: Context<ClosePoll>, poll_id: u64) -> Result<()> {
-        let poll_account = &ctx.accounts.poll_account;
+#[derive(Accounts)]
+#[instruction(poll_id: u64, candidate_id: u64)]
+pub struct DeleteCandidate<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
 
-        // Ensure all candidates are deleted before deleting the poll
-        require!(poll_account.candidate_count == 0, PollError::InvalidPoll);
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub poll_account: Account<'info, Poll>,
 
-        Ok(())
-    }
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref(), candidate_id.to_le_bytes().as_ref()],
+        bump,
+        close = signer
+    )]
+    pub candidate_account: Account<'info, Candidate>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(poll_id: u64)]
+pub struct DeletePoll<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump,
+        constraint = poll_account.authority == *signer.key @ PollError::Unauthorized,
+        close = signer
+    )]
+    pub poll_account: Account<'info, Poll>,
+
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -183,35 +219,10 @@ pub struct Vote<'info> {
         init,
         payer = voter,
         space = 8 + VoteRecord::INIT_SPACE,
-        seeds = [poll_id.to_le_bytes().as_ref(), voter.key.as_ref()],
+        seeds = [b"vote" ,poll_id.to_le_bytes().as_ref(), voter.key.as_ref()],
         bump
     )]
     pub vote_record: Account<'info, VoteRecord>,
-
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-#[instruction(poll_id: u64, candidate_id: u64)]
-pub struct DeleteCandidate<'info> {
-    #[account(mut)]
-    pub signer: Signer<'info>,
-
-    #[account(
-        mut,
-        close = signer,
-        seeds = [poll_id.to_le_bytes().as_ref(), candidate_id.to_le_bytes().as_ref()],
-        bump,
-        constraint = poll_account.authority == *signer.key @ PollError::Unauthorized
-    )]
-    pub candidate: Account<'info, Candidate>,
-
-    #[account(
-        mut,
-        seeds = [poll_id.to_le_bytes().as_ref()],
-        bump
-    )]
-    pub poll_account: Account<'info, Poll>,
 
     pub system_program: Program<'info, System>,
 }
@@ -223,7 +234,6 @@ pub struct Candidate {
     pub poll_id: u64,
     #[max_len(100)]
     pub name: String,
-    pub votes: u64,
 }
 
 #[account]
@@ -234,15 +244,16 @@ pub struct Poll {
     pub question: String,
     pub poll_start: u64,
     pub poll_end: u64,
-    pub candidate_count: u64,
-    pub total_votes: u64,
     pub authority: Pubkey,
+    pub total_candidates: u64,
 }
 
 #[account]
 #[derive(InitSpace)]
 pub struct VoteRecord {
     pub has_voted: bool,
+    pub candidate_id: u64,
+    pub poll_id: u64,
 }
 
 #[error_code]
@@ -261,4 +272,6 @@ pub enum PollError {
     InvalidPoll,
     #[msg("Only the poll creator can modify this poll")]
     Unauthorized,
+    #[msg("Candidates still exist for this poll. Remove them before deleting the poll.")]
+    CandidatesExist,
 }
