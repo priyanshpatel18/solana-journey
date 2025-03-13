@@ -172,14 +172,14 @@ export default function TransactionPage() {
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-700">{error}</p>
-              <div className="mt-6 flex justify-between">
+              <div className="mt-6 flex flex-col xs:flex-row gap-3 xs:gap-0 xs:justify-between">
                 <Link href="/">
-                  <Button variant="outline" className="flex items-center">
+                  <Button variant="outline" className="flex items-center w-full xs:w-auto">
                     <ChevronLeft className="w-4 h-4 mr-1" />
                     Back to Home
                   </Button>
                 </Link>
-                <Button onClick={fetchTransactionDetails} className="flex items-center">
+                <Button onClick={fetchTransactionDetails} className="flex items-center w-full xs:w-auto">
                   <RefreshCw className="w-4 h-4 mr-1" />
                   Retry
                 </Button>
@@ -202,9 +202,9 @@ export default function TransactionPage() {
   });
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-6 sm:py-8 px-3 sm:px-6 lg:px-8">
       {loading && (
-        <div className="h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -223,10 +223,10 @@ export default function TransactionPage() {
         variants={containerVariants}
         className="max-w-4xl mx-auto"
       >
-        <motion.div variants={itemVariants} className="mb-6">
-          <div className="flex items-center justify-between">
+        <motion.div variants={itemVariants} className="mb-4 sm:mb-6">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 xs:gap-0">
             <Link href="/">
-              <Button variant="ghost" className="flex items-center">
+              <Button variant="ghost" className="flex items-center w-full xs:w-auto justify-center xs:justify-start">
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Back to Home
               </Button>
@@ -234,7 +234,7 @@ export default function TransactionPage() {
             <Button
               variant="outline"
               onClick={fetchTransactionDetails}
-              className="flex items-center"
+              className="flex items-center w-full xs:w-auto justify-center"
             >
               <RefreshCw className="w-4 h-4 mr-1" />
               Refresh
@@ -244,12 +244,12 @@ export default function TransactionPage() {
 
         <motion.div variants={itemVariants}>
           <Card className="border-2 border-opacity-50 shadow-lg overflow-hidden">
-            <CardHeader className="border-b">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
+            <CardHeader className="border-b p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="space-y-1">
                   <p className="text-sm">Transaction Signature</p>
                   <div className="flex items-center">
-                    <h1 className="text-lg font-mono tracking-tight truncate max-w-[280px] sm:max-w-[400px]">
+                    <h1 className="text-sm sm:text-lg font-mono tracking-tight truncate max-w-[200px] xs:max-w-[280px] sm:max-w-[400px]">
                       {signature}
                     </h1>
                     <Button
@@ -270,7 +270,7 @@ export default function TransactionPage() {
                   className={`${transaction.status === "Success"
                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
                     : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
-                    } flex items-center px-3 py-1 text-sm`}
+                    } flex items-center px-3 py-1 text-sm self-start sm:self-auto`}
                 >
                   {transaction.status === "Success" ? (
                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -285,91 +285,93 @@ export default function TransactionPage() {
               <div className="flex border-b overflow-x-auto">
                 <Button
                   variant="ghost"
-                  className={`py-3 px-4 rounded-none cursor-pointer ${selectedTab === "overview" && "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"}`}
+                  className={`py-2 sm:py-3 px-3 sm:px-4 rounded-none cursor-pointer ${selectedTab === "overview" && "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"}`}
                   onClick={() => setSelectedTab("overview")}
                 >
                   Overview
                 </Button>
                 <Button
                   variant="ghost"
-                  className={`py-3 px-4 rounded-none cursor-pointer ${selectedTab === "logs" && "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"}`}
+                  className={`py-2 sm:py-3 px-3 sm:px-4 rounded-none cursor-pointer ${selectedTab === "logs" && "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"}`}
                   onClick={() => setSelectedTab("logs")}
                 >
                   Logs
                 </Button>
                 <Button
                   variant="ghost"
-                  className={`py-3 px-4 rounded-none cursor-pointer ${selectedTab === "accounts" && "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"}`}
+                  className={`py-2 sm:py-3 px-3 sm:px-4 rounded-none cursor-pointer ${selectedTab === "accounts" && "border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"}`}
                   onClick={() => setSelectedTab("accounts")}
                 >
                   Accounts
                 </Button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {selectedTab === "overview" && (
                   <motion.div
                     key="overview"
                     initial="hidden"
                     animate="visible"
                     variants={fadeIn}
-                    className="space-y-6"
+                    className="space-y-4 sm:space-y-6"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="border-2 p-4 rounded-lg">
-                        <p className="text-sm font-medium">Block Time</p>
-                        <p className="mt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+                      <div className="border-2 p-3 sm:p-4 rounded-lg">
+                        <p className="text-xs sm:text-sm font-medium">Block Time</p>
+                        <p className="mt-1 text-sm sm:text-base break-words">
                           {new Date(transaction.blockTime * 1000).toLocaleString()}
                         </p>
                       </div>
 
-                      <div className="border-2 p-4 rounded-lg">
-                        <p className="text-sm font-medium">Transaction Fee</p>
-                        <p className="mt-1">
+                      <div className="border-2 p-3 sm:p-4 rounded-lg">
+                        <p className="text-xs sm:text-sm font-medium">Transaction Fee</p>
+                        <p className="mt-1 text-sm sm:text-base">
                           {transaction.meta.fee / 1000000000} SOL ({transaction.meta.fee} lamports)
                         </p>
                       </div>
 
                       {transaction.slot && (
-                        <div className="border-2 p-4 rounded-lg">
-                          <p className="text-sm font-medium">Slot</p>
-                          <p className="mt-1">{transaction.slot}</p>
+                        <div className="border-2 p-3 sm:p-4 rounded-lg">
+                          <p className="text-xs sm:text-sm font-medium">Slot</p>
+                          <p className="mt-1 text-sm sm:text-base">{transaction.slot}</p>
                         </div>
                       )}
 
-                      <div className="border-2 p-4 rounded-lg">
-                        <p className="text-sm font-medium">Recent Blockhash</p>
-                        <p className="mt-1 text-sm font-mono break-all">
+                      <div className="border-2 p-3 sm:p-4 rounded-lg">
+                        <p className="text-xs sm:text-sm font-medium">Recent Blockhash</p>
+                        <p className="mt-1 text-xs sm:text-sm font-mono break-all">
                           {transaction.transaction.message.recentBlockhash}
                         </p>
                       </div>
                     </div>
 
-                    <div className="border-2 p-4 rounded-lg">
-                      <p className="text-sm font-medium">Detailed Status</p>
+                    <div className="border-2 p-3 sm:p-4 rounded-lg">
+                      <p className="text-xs sm:text-sm font-medium">Detailed Status</p>
                       <div className="mt-2">
                         {transaction.meta.err ? (
                           <div className="text-red-600 dark:text-red-400">
-                            <p className="font-medium">Error:</p>
+                            <p className="font-medium text-sm">Error:</p>
                             <pre className="mt-1 text-xs overflow-x-auto p-2 bg-red-50 dark:bg-red-900/30 rounded">
                               {JSON.stringify(transaction.meta.err, null, 2)}
                             </pre>
                           </div>
                         ) : (
-                          <p className="text-green-600 dark:text-green-400">Transaction completed successfully</p>
+                          <p className="text-green-600 dark:text-green-400 text-sm">Transaction completed successfully</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="border-2 p-4 rounded-lg">
-                      <p className="text-sm font-medium">Instructions</p>
+                    <div className="border-2 p-3 sm:p-4 rounded-lg">
+                      <p className="text-xs sm:text-sm font-medium">Instructions</p>
                       <div className="mt-2 space-y-3">
                         {transaction.transaction.message.instructions.map((instruction, idx) => (
-                          <div key={idx} className="p-3 border bg-muted rounded-md">
-                            <p className="font-medium text-sm">Instruction {idx + 1}</p>
-                            <pre className="mt-2 text-xs overflow-x-auto">
-                              {JSON.stringify(instruction, null, 2)}
-                            </pre>
+                          <div key={idx} className="p-2 sm:p-3 border bg-muted rounded-md">
+                            <p className="font-medium text-xs sm:text-sm">Instruction {idx + 1}</p>
+                            <div className="mt-2 overflow-x-auto">
+                              <pre className="text-xs whitespace-pre-wrap">
+                                {JSON.stringify(instruction, null, 2)}
+                              </pre>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -384,18 +386,18 @@ export default function TransactionPage() {
                     animate="visible"
                     variants={fadeIn}
                   >
-                    <div className="border-2 p-4 rounded-lg">
-                      <p className="text-sm font-medium mb-3">Log Messages</p>
+                    <div className="border-2 p-3 sm:p-4 rounded-lg">
+                      <p className="text-xs sm:text-sm font-medium mb-3">Log Messages</p>
                       {transaction.meta.logMessages && transaction.meta.logMessages.length > 0 ? (
-                        <div className="bg-black text-green-400 p-4 rounded-md font-mono text-xs overflow-x-auto max-h-96 overflow-y-auto">
+                        <div className="bg-black text-green-400 p-3 sm:p-4 rounded-md font-mono text-xs overflow-x-auto max-h-64 sm:max-h-96 overflow-y-auto">
                           {transaction.meta.logMessages.map((log, index) => (
-                            <div key={index} className="py-1">
+                            <div key={index} className="py-1 break-words whitespace-pre-wrap">
                               {log}
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-muted italic">No log messages available</p>
+                        <p className="text-muted italic text-sm">No log messages available</p>
                       )}
                     </div>
                   </motion.div>
@@ -409,33 +411,33 @@ export default function TransactionPage() {
                     animate="visible"
                     variants={fadeIn}
                   >
-                    <div className="border-2 p-4 rounded-lg">
-                      <p className="text-sm font-medium mb-3">Account Balance Changes</p>
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
+                    <div className="border-2 p-3 sm:p-4 rounded-lg">
+                      <p className="text-xs sm:text-sm font-medium mb-3">Account Balance Changes</p>
+                      <div className="overflow-x-auto -mx-3 sm:-mx-4">
+                        <table className="w-full min-w-[640px]">
                           <thead>
                             <tr className="border-b border-border">
-                              <th className="py-2 px-4 text-left text-xs font-medium">Account</th>
-                              <th className="py-2 px-4 text-left text-xs font-medium">Pre-Balance (SOL)</th>
-                              <th className="py-2 px-4 text-left text-xs font-medium">Post-Balance (SOL)</th>
-                              <th className="py-2 px-4 text-left text-xs font-medium">Change</th>
+                              <th className="py-2 px-3 sm:px-4 text-left text-xs font-medium">Account</th>
+                              <th className="py-2 px-3 sm:px-4 text-left text-xs font-medium">Pre-Balance (SOL)</th>
+                              <th className="py-2 px-3 sm:px-4 text-left text-xs font-medium">Post-Balance (SOL)</th>
+                              <th className="py-2 px-3 sm:px-4 text-left text-xs font-medium">Change</th>
                             </tr>
                           </thead>
                           <tbody>
                             {transaction.transaction.message.accountKeys.map((account, index) => (
                               <tr key={index} className="border-b border-border">
-                                <td className="py-3 px-4">
-                                  <div className="font-mono text-xs truncate max-w-[180px] md:max-w-[220px]">
+                                <td className="py-2 sm:py-3 px-3 sm:px-4">
+                                  <div className="font-mono text-xs truncate max-w-[140px] sm:max-w-[180px] md:max-w-[220px]">
                                     {account}
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 font-mono text-xs">
+                                <td className="py-2 sm:py-3 px-3 sm:px-4 font-mono text-xs">
                                   {transaction.meta.preBalances[index] / 1000000000}
                                 </td>
-                                <td className="py-3 px-4 font-mono text-xs">
+                                <td className="py-2 sm:py-3 px-3 sm:px-4 font-mono text-xs">
                                   {transaction.meta.postBalances[index] / 1000000000}
                                 </td>
-                                <td className={`py-3 px-4 font-mono text-xs ${balanceChanges[index] > 0
+                                <td className={`py-2 sm:py-3 px-3 sm:px-4 font-mono text-xs ${balanceChanges[index] > 0
                                   ? 'text-green-600 dark:text-green-400'
                                   : balanceChanges[index] < 0
                                     ? 'text-red-600 dark:text-red-400'
@@ -457,15 +459,15 @@ export default function TransactionPage() {
           </Card>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="mt-6 flex justify-between items-center">
-          <p className="text-sm">
+        <motion.div variants={itemVariants} className="mt-4 sm:mt-6 flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 xs:gap-0">
+          <p className="text-xs sm:text-sm">
             TxnShare • Solana Transaction Details
           </p>
           <Button
             variant="outline"
             size="sm"
             onClick={() => window.open(`https://explorer.solana.com/tx/${signature}`, '_blank')}
-            className="flex items-center"
+            className="flex items-center w-full xs:w-auto justify-center"
           >
             View in Explorer
             <ExternalLink className="ml-1 w-3 h-3" />
