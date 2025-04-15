@@ -1,0 +1,8 @@
+[package]
+name = "core-concepts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+uuid = { version = "1.16.0", features = ["v4", "fast-rng"] }
